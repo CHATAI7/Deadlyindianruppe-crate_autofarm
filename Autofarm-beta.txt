@@ -1,16 +1,17 @@
 --[[
-    Crate Auto Farm + Full Screen GUI + Bolji Server Hop
+    Crate Auto Farm + Full Screen GUI + Najbolji Server Hop
 ]]
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-local TargetPlaceId = 119476219904460 -- Deadly Indian Truck Driving
+local TargetPlaceId = 119476219904460
 
--- === GUI (isti kao ranije) ===
+-- === GUI ===
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CrateFarmGUI"
 ScreenGui.ResetOnSpawn = false
@@ -60,7 +61,7 @@ local function AddLog(text)
     Log.Text = Log.Text:sub(-5000)
 end
 
-AddLog("Crate Auto Farm started")
+AddLog("Crate Auto Farm GUI Loaded")
 
 -- Anti-AFK
 LocalPlayer.Idled:Connect(function()
@@ -78,4 +79,65 @@ char:WaitForChild("HumanoidRootPart", 10)
 
 AddLog("✅ Game loaded! Starting farm...")
 
-local function TeleportTo
+local function TeleportToCrate(crate)
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        root.CFrame = CFrame.new(crate.Position + Vector3.new(0, 6, 0))
+        task.wait(0.8)
+    end
+end
+
+local function OpenCrate(crate)
+    local prompt = crate:FindFirstChildWhichIsA("ProximityPrompt") or crate.Parent:FindFirstChildWhichIsA("ProximityPrompt")
+    local click = crate:FindFirstChildWhichIsA("ClickDetector")
+    if prompt then fireproximityprompt(prompt, 0) task.wait(1.6)
+    elseif click then fireclickdetector(click) task.wait(1.6)
+    else task.wait(1) end
+end
+
+local function ServerHop()
+    AddLog("🔄 No more crates! Searching for new server in Deadly Indian Truck Driving...")
+    task.wait(2)
+    
+    local success, servers = pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. TargetPlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
+    
+    if success and servers and servers.data then
+        for _, server in ipairs(servers.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                AddLog("Found good server! Hopping...")
+                TeleportService:TeleportToPlaceInstance(TargetPlaceId, server.id, LocalPlayer)
+                return
+            end
+        end
+    end
+    
+    -- Backup hop
+    AddLog("Using direct hop...")
+    TeleportService:Teleport(TargetPlaceId, LocalPlayer)
+end
+
+-- Main Loop
+while true do
+    local cratesFound = 0
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name:lower() == "crate" and obj:IsA("BasePart") and obj.Parent then
+            cratesFound += 1
+            AddLog("📦 Found Crate #" .. cratesFound)
+            TeleportToCrate(obj)
+            OpenCrate(obj)
+            task.wait(1.4)
+        end
+    end
+    
+    if cratesFound == 0 then
+        ServerHop()
+        break
+    end
+    
+    AddLog("No more crates in this server. Waiting...")
+    task.wait(4)
+end
