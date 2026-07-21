@@ -1,0 +1,136 @@
+--[[
+    Crate Auto Farm + Full Screen GUI (Logs na sredini + veći)
+]]
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
+local TargetPlaceId = 119476219904460
+
+-- === FULL SCREEN GUI ===
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CrateFarmGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(1, 0, 1, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BackgroundTransparency = 0.4
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 70)
+Title.BackgroundTransparency = 1
+Title.Text = "CRATE AUTO FARM"
+Title.TextColor3 = Color3.fromRGB(0, 255, 100)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Frame
+
+-- VEĆI LOG NA SREDINI
+local Log = Instance.new("TextLabel")
+Log.Size = UDim2.new(0.95, 0, 0.65, 0)      -- Veći (65% visine)
+Log.Position = UDim2.new(0.025, 0, 0.18, 0) -- Na sredini
+Log.BackgroundTransparency = 0.1
+Log.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Log.Text = "Initializing...\n"
+Log.TextColor3 = Color3.fromRGB(255, 255, 255)
+Log.TextSize = 19
+Log.TextXAlignment = Enum.TextXAlignment.Left
+Log.TextYAlignment = Enum.TextYAlignment.Top
+Log.Font = Enum.Font.Gotham
+Log.TextWrapped = true
+Log.Parent = Frame
+
+local BottomText = Instance.new("TextLabel")
+BottomText.Size = UDim2.new(1, 0, 0, 50)
+BottomText.Position = UDim2.new(0, 0, 1, -50)
+BottomText.BackgroundTransparency = 1
+BottomText.Text = "If not working add jakovpavic27 on Discord and send him the issue with console screenshot"
+BottomText.TextColor3 = Color3.fromRGB(255, 80, 80)
+BottomText.TextScaled = true
+BottomText.Font = Enum.Font.GothamSemibold
+BottomText.Parent = Frame
+
+local function AddLog(text)
+    Log.Text = Log.Text .. os.date("[%H:%M:%S] ") .. text .. "\n"
+    Log.Text = Log.Text:sub(-5000) -- više linija
+end
+
+AddLog("Crate Auto Farm GUI Loaded")
+AddLog("Waiting for full game load...")
+
+-- Anti-AFK
+LocalPlayer.Idled:Connect(function()
+    pcall(function()
+        VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+    end)
+end)
+
+-- Wait for full load
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+char:WaitForChild("HumanoidRootPart", 10)
+
+AddLog("✅ Game fully loaded! Starting farm...")
+
+local function TeleportToCrate(crate)
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        root.CFrame = CFrame.new(crate.Position + Vector3.new(0, 6, 0))
+        task.wait(0.8)
+    end
+end
+
+local function OpenCrate(crate)
+    local prompt = crate:FindFirstChildWhichIsA("ProximityPrompt") or crate.Parent:FindFirstChildWhichIsA("ProximityPrompt")
+    local click = crate:FindFirstChildWhichIsA("ClickDetector")
+    
+    if prompt then
+        fireproximityprompt(prompt, 0)
+        task.wait(1.6)
+    elseif click then
+        fireclickdetector(click)
+        task.wait(1.6)
+    else
+        task.wait(1)
+    end
+end
+
+local function ServerHop()
+    AddLog("🔄 No more crates! Hopping to Deadly Indian Truck Driving...")
+    task.wait(2)
+    TeleportService:Teleport(TargetPlaceId, LocalPlayer)
+end
+
+-- Main Loop
+while true do
+    local cratesFound = 0
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name:lower() == "crate" and obj:IsA("BasePart") and obj.Parent then
+            cratesFound += 1
+            AddLog("📦 Found Crate #" .. cratesFound .. " - Teleporting + Opening")
+            TeleportToCrate(obj)
+            OpenCrate(obj)
+            task.wait(1.4)
+        end
+    end
+    
+    if cratesFound == 0 then
+        ServerHop()
+        break
+    end
+    
+    AddLog("Checked all crates (" .. cratesFound .. " processed). Waiting...")
+    task.wait(3)
+end
