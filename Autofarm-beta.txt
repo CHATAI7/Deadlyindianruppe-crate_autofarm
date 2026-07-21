@@ -1,12 +1,11 @@
 --[[
-    Crate Auto Farm + Full Screen GUI + Najbolji Server Hop
+    Crate Auto Farm + Aggressive Loading Screen Remover
 ]]
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
-local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local TargetPlaceId = 119476219904460
@@ -50,7 +49,7 @@ local BottomText = Instance.new("TextLabel")
 BottomText.Size = UDim2.new(1, 0, 0, 50)
 BottomText.Position = UDim2.new(0, 0, 1, -50)
 BottomText.BackgroundTransparency = 1
-BottomText.Text = "If not working add jakovpavic27 on Discord and send him the issue with console screenshot"
+BottomText.Text = "If not working add jakovpavic27 on Discord..."
 BottomText.TextColor3 = Color3.fromRGB(255, 80, 80)
 BottomText.TextScaled = true
 BottomText.Font = Enum.Font.GothamSemibold
@@ -61,7 +60,7 @@ local function AddLog(text)
     Log.Text = Log.Text:sub(-5000)
 end
 
-AddLog("Crate Auto Farm GUI Loaded")
+AddLog("Crate Auto Farm started")
 
 -- Anti-AFK
 LocalPlayer.Idled:Connect(function()
@@ -72,13 +71,41 @@ LocalPlayer.Idled:Connect(function()
     end)
 end)
 
--- Wait for load
-if not game:IsLoaded() then game.Loaded:Wait() end
+-- Aggressive Loading Screen Remover
+local function RemoveLoadingScreen()
+    AddLog("Removing Loading Screen...")
+    
+    for i = 1, 25 do
+        for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+            if gui.Name:find("Load") or gui.Name:find("load") or gui.Name == "LoadingScreen" or gui.Name == "StarterGui" then
+                gui:Destroy()
+                AddLog("Destroyed: " .. gui.Name)
+            end
+        end
+        
+        for _, v in ipairs(game:GetDescendants()) do
+            if v.Name:find("Load") or v.Name:find("load") or v.Name == "LoadingScreen" then
+                pcall(function() v:Destroy() end)
+            end
+        end
+        task.wait(0.4)
+    end
+    AddLog("Loading Screen removal finished")
+end
+
+-- Start
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+RemoveLoadingScreen()
+
 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 char:WaitForChild("HumanoidRootPart", 10)
 
-AddLog("✅ Game loaded! Starting farm...")
+AddLog("✅ Game ready! Starting farm...")
 
+-- Crate functions
 local function TeleportToCrate(crate)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if root then
@@ -96,33 +123,14 @@ local function OpenCrate(crate)
 end
 
 local function ServerHop()
-    AddLog("🔄 No more crates! Searching for new server in Deadly Indian Truck Driving...")
+    AddLog("🔄 No more crates! Hopping...")
     task.wait(2)
-    
-    local success, servers = pcall(function()
-        local url = "https://games.roblox.com/v1/games/" .. TargetPlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        return HttpService:JSONDecode(game:HttpGet(url))
-    end)
-    
-    if success and servers and servers.data then
-        for _, server in ipairs(servers.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                AddLog("Found good server! Hopping...")
-                TeleportService:TeleportToPlaceInstance(TargetPlaceId, server.id, LocalPlayer)
-                return
-            end
-        end
-    end
-    
-    -- Backup hop
-    AddLog("Using direct hop...")
     TeleportService:Teleport(TargetPlaceId, LocalPlayer)
 end
 
 -- Main Loop
 while true do
     local cratesFound = 0
-    
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj.Name:lower() == "crate" and obj:IsA("BasePart") and obj.Parent then
             cratesFound += 1
@@ -138,6 +146,6 @@ while true do
         break
     end
     
-    AddLog("No more crates in this server. Waiting...")
+    AddLog("No more crates. Waiting...")
     task.wait(4)
 end
