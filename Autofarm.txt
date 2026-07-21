@@ -1,0 +1,32 @@
+@echo off
+title [discord.gg/olemad]
+setlocal
+
+:: Check for admin privileges and elevate if needed
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator privileges...
+    powershell -NoProfile -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
+echo Killing Madium processes...
+
+taskkill /F /IM Madium.exe >nul 2>&1
+taskkill /F /IM madium.exe >nul 2>&1
+taskkill /F /IM Loader.exe >nul 2>&1
+
+timeout /t 1 /nobreak >nul
+
+echo Deleting %LocalAppData%\Madium...
+
+rmdir /S /Q "%LocalAppData%\Madium" >nul 2>&1
+
+if exist "%LocalAppData%\Madium" (
+    echo Failed to remove the folder.
+) else (
+    echo Done.
+)
+
+pause
+endlocal
